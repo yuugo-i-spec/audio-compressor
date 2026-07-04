@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>社内専用：音声軽量化ツール</title>
+    <title>音声軽量化ツール</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f7f9; text-align: center; padding: 30px; }
         .container { max-width: 550px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -16,9 +16,9 @@
 <body>
 
 <div class="container">
-    <div class="alert-box">完全ローカル処理（社外秘データ安全確認済）</div>
+    <div class="alert-box">完全ローカル処理</div>
     <h1>音声軽量化コンバーター</h1>
-    <p>音声ファイルをGeminiが読み込めるサイズにブラウザ内で安全に軽量化します。</p>
+    <p>音声ファイルをブラウザ内で軽量化します。<br>音声形式はMP3形式にしてください。</p>
     
     <input type="file" id="fileSelector" accept="audio/*">
     <div id="status">ファイルを待機中...（ファイルを選択してください）</div>
@@ -76,10 +76,10 @@
                 downloadBtn.href = url;
                 downloadBtn.download = file.name.replace(/\.[^/.]+$/, "") + "_軽量化.wav";
                 
-                status.innerHTML = "✅ 軽量化が成功したわ！下のボタンから保存してね。";
+                status.innerHTML = "✅ 軽量化に成功！下のボタンから保存してください。";
                 downloadBtn.style.display = 'inline-block';
             } catch (err) {
-                status.innerHTML = "❌ 予期せぬエラーが発生したわ。";
+                status.innerHTML = "❌ 予期せぬエラーが発生しました。";
                 console.error(err);
             }
         });
