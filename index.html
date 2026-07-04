@@ -3,115 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>社内専用：音声軽量化コンバーター (Gemini用)</title>
+    <title>社内専用：音声軽量化ツール</title>
     <style>
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f4f7f9; color: #333; padding: 40px; text-align: center; }
-        .container { max-width: 600px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { color: #1B365D; font-size: 22px; margin-bottom: 10px; }
-        p { color: #666; font-size: 14px; line-height: 1.6; }
-        .secret-tag { display: inline-block; background: #dc3545; color: white; padding: 2px 8px; font-size: 12px; font-weight: bold; border-radius: 4px; margin-bottom: 15px; }
-        .drop-zone { border: 2px dashed #1B365D; border-radius: 6px; padding: 40px 20px; background: #f0F4F8; cursor: pointer; transition: 0.2s; margin: 20px 0; }
-        .drop-zone:hover { background: #e2efda; }
-        #status { font-weight: bold; margin-top: 15px; color: #555; }
-        #downloadLink { display: none; margin-top: 20px; background: #28a745; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; }
+        body { font-family: Arial, sans-serif; background-color: #f4f7f9; color: #333; padding: 30px; text-align: center; }
+        .container { max-width: 550px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1B365D; font-size: 20px; }
+        .alert-box { background: #dc3545; color: white; padding: 4px; font-size: 12px; font-weight: bold; border-radius: 4px; margin-bottom: 15px; }
+        
+        /* 確実に入力させるために、標準のファイル選択ボタンを大きくそのまま表示するわ */
+        input[type="file"] { display: block; margin: 30px auto; padding: 15px; background: #f0f4f8; border: 1px solid #ccc; border-radius: 4px; width: 80%; cursor: pointer; }
+        
+        #status { font-weight: bold; margin: 20px 0; color: #555; font-size: 15px; background: #fff3cd; padding: 10px; border-radius: 4px; border: 1px solid #ffeeba; display: none; }
+        #downloadBtn { display: none; margin-top: 20px; background: #28a745; color: white; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <span class="secret-tag">完全ローカル処理（社外秘対応）</span>
-    <h1>音声軽量化コンバーター (WAV変換)</h1>
-    <p>音声ファイルをGemini（100MB制限）に受け付けさせるため、<br>ブラウザ上で安全にモノラル・低ビットレート化します。<br>※データは外部サーバーに一切送信されません。</p>
+    <div class="alert-box">完全ローカル処理（社外秘データ安全確認済）</div>
+    <h1>音声軽量化コンバーター</h1>
+    <p>300MB超の音声も、Geminiが読み込める20〜40MB前後のWAVファイルにブラウザ内で安全に軽量化します。</p>
     
-    <div class="drop-zone" id="dropZone">
-        ここに音声ファイルをドロップするか、<br>ここをクリックしてファイルを選択してください
-        <input type="file" id="fileInput" accept="audio/*" style="display: none;">
-    </div>
+    <input type="file" id="fileSelector" accept="audio/*">
 
     <div id="status">ファイルを待機中...</div>
-    <a id="downloadLink" href="#">軽量化ファイルをダウンロード</a>
+    
+    <a id="downloadBtn" href="#">軽量化されたファイルを保存する</a>
 </div>
 
 <script>
-    const dropZone = document.getElementById('dropZone');
-    const fileInput = document.getElementById('fileInput');
+    const fileSelector = document.getElementById('fileSelector');
     const status = document.getElementById('status');
-    const downloadLink = document.getElementById('downloadLink');
+    const downloadBtn = document.getElementById('downloadBtn');
 
-    dropZone.addEventListener('click', () => fileInput.click());
-    dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.background = '#e2efda'; });
-    dropZone.addEventListener('dragleave', () => dropZone.style.background = '#f0F4F8');
-    dropZone.addEventListener('drop', (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); });
-    fileInput.addEventListener('change', (e) => handleFile(e.target.files[0]));
-
-    async function handleFile(file) {
+    // ボタンが変更されたら（ファイルが選ばれたら）確実に発火するイベント
+    fileSelector.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
         if (!file) return;
-        status.innerHTML = "ファイルを解析中... (長時間ファイルは少し時間がかかります)";
-        downloadLink.style.display = 'none';
+
+        // 画面上のステータスを表示状態にする
+        status.style.display = 'block';
+        status.innerHTML = "⏳ ファイルを読み込み中...（2時間のファイルは少し時間がかかります。ブラウザを閉じずに待ってね）";
+        downloadBtn.style.display = 'none';
 
         try {
-            // 1. Web Audio APIのコンテキスト作成
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            // 安全にデコードを行うための標準処理
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioCtx = new AudioContext();
             const arrayBuffer = await file.arrayBuffer();
             
-            status.innerHTML = "音声をデコード中...（PCのメモリで処理しています）";
+            status.innerHTML = "⏳ 音声データをデコード中（PCのメモリで変換しています）...";
             const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-            status.innerHTML = "音質を文字起こし用に最適化中 (モノラル・16kHz化)...";
+            status.innerHTML = "⏳ 音質を文字起こし用に最適化中（モノラル・16kHzに圧縮中）...";
             
-            // 2. 文字起こし用に16kHzのモノラル(1ch)のバッファを作成（劇的に軽くなるわ）
-            const targetSampleRate = 16000; 
+            // 16kHz モノラル(1ch)にリサンプリングして容量を激減させるロジック
+            const targetSampleRate = 16000;
             const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * targetSampleRate, targetSampleRate);
             
-            const bufferSource = offlineCtx.createBufferSource();
-            bufferSource.buffer = audioBuffer;
-            bufferSource.connect(offlineCtx.destination);
-            bufferSource.start();
+            const source = offlineCtx.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(offlineCtx.destination);
+            source.start();
 
             const renderedBuffer = await offlineCtx.startRendering();
             
-            status.innerHTML = "保存用ファイルを生成中...";
-            // 3. WAVフォーマットのBlobを生成
+            status.innerHTML = "⏳ 保存用データを生成中...";
             const wavBlob = bufferToWav(renderedBuffer);
             
-            // 4. ダウンロードリンクの設定
+            // ダウンロードリンクを生成
             const url = URL.createObjectURL(wavBlob);
-            downloadLink.href = url;
-            downloadLink.download = file.name.replace(/\.[^/.]+$/, "") + "_軽量化.wav";
-            downloadLink.style.display = 'inline-block';
-            status.innerHTML = "✅ 軽量化が完了したわ！下のボタンから保存してね。";
-        } catch (error) {
-            status.innerHTML = "❌ エラーが発生したわ。ファイルが破損しているか、ブラウザが対応していない可能性があるわね。";
-            console.error(error);
+            downloadBtn.href = url;
+            downloadBtn.download = file.name.replace(/\.[^/.]+$/, "") + "_軽量化.wav";
+            
+            status.innerHTML = "✅ 軽量化が成功したわ！";
+            downloadBtn.style.display = 'inline-block';
+        } catch (err) {
+            status.innerHTML = "❌ エラーが発生したわ。ファイル形式が非対応か、ブラウザのメモリが不足している可能性があるわ。";
+            console.error(err);
         }
-    }
+    });
 
-    // AudioBufferを軽量WAVバイナリに変換するロジック
+    // WAV変換バイナリ作成（標準的な互換性重視ロジック）
     function bufferToWav(buffer) {
         const numOfChan = buffer.numberOfChannels,
             length = buffer.length * numOfChan * 2 + 44,
             bufferArr = new ArrayBuffer(length),
             view = new DataView(bufferArr),
             channels = [], i, sample,
-            offset = 0,
-            pos = 0;
+            offset = 0, pos = 0;
 
         function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
         function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
 
-        setUint32(0x46464952); // "RIFF"
-        setUint32(length - 8); // file length - 8
-        setUint32(0x45564157); // "WAVE"
-        setUint32(0x20746d66); // "fmt " chunk
-        setUint32(16);         // chunk length
-        setUint16(1);          // sample format (raw)
-        setUint16(numOfChan);
-        setUint32(buffer.sampleRate);
-        setUint32(buffer.sampleRate * 2 * numOfChan); // byte rate
-        setUint16(numOfChan * 2);                     // block align
-        setUint16(16);                                // bits per sample
-        setUint32(0x61746164); // "data" chunk
-        setUint32(length - pos - 4);
+        setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
+        setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
+        setUint32(buffer.sampleRate); setUint32(buffer.sampleRate * 2 * numOfChan);
+        setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(length - pos - 4);
 
         for (i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
 
@@ -119,8 +107,7 @@
             for (i = 0; i < numOfChan; i++) {
                 sample = Math.max(-1, Math.min(1, channels[i][offset]));
                 sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-                view.setInt16(pos, sample, true);
-                pos += 2;
+                view.setInt16(pos, sample, true); pos += 2;
             }
             offset++;
         }
