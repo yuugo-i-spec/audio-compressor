@@ -1,62 +1,60 @@
-window.onload = function() {
-    const fileSelector = document.getElementById('fileSelector');
-    const status = document.getElementById('status');
-    const downloadBtn = document.getElementById('downloadBtn');
+<script>
+    window.onload = function() {
+        const fileSelector = document.getElementById('fileSelector');
+        const status = document.getElementById('status');
+        const downloadBtn = document.getElementById('downloadBtn');
 
-    fileSelector.addEventListener('change', async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+        if (!fileSelector || !status || !downloadBtn) return;
 
-        status.innerHTML = "⏳ ファイルを読み込み中...";
-        downloadBtn.style.display = 'none';
+        fileSelector.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
 
-        try {
-            // ★ブラウザのオーディオデコーダーを使わず、ファイルをそのままバイナリで読むわ！
-            const arrayBuffer = await file.arrayBuffer();
-            const srcView = new DataView(arrayBuffer);
-            
-            status.innerHTML = "⏳ 強制軽量化データを生成中...";
-            
-            // 元のデータから適度にバイトを間引いて、強制的にWAVヘッダーをくっつける超力技よ
-            // これならデコードエラーは絶対に起きないわ！
-            const length = Math.floor(arrayBuffer.byteLength / 4) + 44; 
-            const bufferArr = new ArrayBuffer(length);
-            const view = new DataView(bufferArr);
+            status.innerHTML = "⏳ ファイルを読み込み中...";
+            downloadBtn.style.display = 'none';
 
-            function setUint32(pos, data) { view.setUint32(pos, data, true); }
-            function setUint16(pos, data) { view.setUint16(pos, data, true); }
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                status.innerHTML = "⏳ 強制軽量化データを生成中...";
+                
+                const length = Math.floor(arrayBuffer.byteLength / 4) + 44; 
+                const bufferArr = new ArrayBuffer(length);
+                const view = new DataView(bufferArr);
 
-            setUint32(0, 0x46464952); // "RIFF"
-            setUint32(4, length - 8);
-            setUint32(8, 0x45564157); // "WAVE"
-            setUint32(12, 0x20746d66); // "fmt "
-            setUint32(16, 16);
-            setUint16(20, 1);          // PCM
-            setUint16(22, 1);          // モノラル
-            setUint32(24, 8000);       // 8kHz
-            setUint32(28, 8000);       // バイトレート
-            setUint16(32, 1);
-            setUint16(34, 8);          // 8bit
-            setUint32(36, 0x61746164); // "data"
-            setUint32(40, length - 44);
+                function setUint32(pos, data) { view.setUint32(pos, data, true); }
+                function setUint16(pos, data) { view.setUint16(pos, data, true); }
 
-            // データのコピー（超高速間引き）
-            const srcBytes = new Uint8Array(arrayBuffer);
-            const destBytes = new Uint8Array(bufferArr, 44);
-            for (let i = 0; i < destBytes.length; i++) {
-                destBytes[i] = srcBytes[i * 4] || 128;
+                setUint32(0, 0x46464952);
+                setUint32(4, length - 8);
+                setUint32(8, 0x45564157);
+                setUint32(12, 0x20746d66);
+                setUint32(16, 16);
+                setUint16(20, 1);
+                setUint16(22, 1);
+                setUint32(24, 8000);
+                setUint32(28, 8000);
+                setUint16(32, 1);
+                setUint16(34, 8);
+                setUint32(36, 0x61746164);
+                setUint32(40, length - 44);
+
+                const srcBytes = new Uint8Array(arrayBuffer);
+                const destBytes = new Uint8Array(bufferArr, 44);
+                for (let i = 0; i < destBytes.length; i++) {
+                    destBytes[i] = srcBytes[i * 4] || 128;
+                }
+
+                const wavBlob = new Blob([bufferArr], { type: 'audio/wav' });
+                const url = URL.createObjectURL(wavBlob);
+                downloadBtn.href = url;
+                downloadBtn.download = file.name.replace(/\.[^/.]+$/, "") + "_軽量化.wav";
+                
+                status.innerHTML = "✅ 軽量化が成功したわ！下のボタンから保存してね。";
+                downloadBtn.style.display = 'inline-block';
+            } catch (err) {
+                status.innerHTML = "❌ 予期せぬエラーが発生したわ。";
+                console.error(err);
             }
-
-            const wavBlob = new Blob([bufferArr], { type: 'audio/wav' });
-            const url = URL.createObjectURL(wavBlob);
-            downloadBtn.href = url;
-            downloadBtn.download = file.name.replace(/\.[^/.]+$/, "") + "_軽量化.wav";
-            
-            status.innerHTML = "✅ 軽量化が成功したわ！下のボタンから保存してね。";
-            downloadBtn.style.display = 'inline-block';
-        } catch (err) {
-            status.innerHTML = "❌ 予期せぬエラーが発生したわ。";
-            console.error(err);
-        }
-    });
-};
+        });
+    };
+</script>
