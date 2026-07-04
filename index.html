@@ -1,3 +1,30 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>社内専用：音声軽量化ツール</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f7f9; text-align: center; padding: 30px; }
+        .container { max-width: 550px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .alert-box { background: #dc3545; color: white; padding: 6px; font-size: 12px; font-weight: bold; border-radius: 4px; margin-bottom: 15px; }
+        input[type="file"] { display: block; margin: 30px auto; padding: 15px; background: #f0f4f8; border: 1px solid #ccc; width: 80%; cursor: pointer; }
+        #status { font-weight: bold; margin: 20px 0; color: #555; font-size: 15px; background: #fff3cd; padding: 10px; border-radius: 4px; border: 1px solid #ffeeba; }
+        #downloadBtn { display: none; margin-top: 20px; background: #28a745; color: white; padding: 14px 28px; text-decoration: none; border-radius: 4px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="alert-box">完全ローカル処理（社外秘データ安全確認済）</div>
+    <h1>音声軽量化コンバーター</h1>
+    <p>音声ファイルをGeminiが読み込めるサイズにブラウザ内で安全に軽量化します。</p>
+    
+    <input type="file" id="fileSelector" accept="audio/*">
+    <div id="status">ファイルを待機中...（ファイルを選択してください）</div>
+    <a id="downloadBtn" href="#">軽量化されたファイルを保存する</a>
+</div>
+
 <script>
     window.onload = function() {
         const fileSelector = document.getElementById('fileSelector');
@@ -58,3 +85,6 @@
         });
     };
 </script>
+
+</body>
+</html>
