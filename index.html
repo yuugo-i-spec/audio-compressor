@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>社内専用：音声軽量化ツール (高互換性版)</title>
+    <title>音声軽量化ツール</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f7f9; text-align: center; padding: 30px; }
         .container { max-width: 550px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -16,9 +16,9 @@
 <body>
 
 <div class="container">
-    <div class="alert-box">完全ローカル処理（社外秘データ安全確認済）</div>
-    <h1>音声軽量化コンバーター (修正版)</h1>
-    <p>300MB超の音声ファイルを、Geminiが読み込める数十MBの安全なWAVに軽量化します。</p>
+    <div class="alert-box">ローカル処理</div>
+    <h1>音声軽量化コンバーター</h1>
+    <p>音声ファイルを軽量化します。</p>
     
     <input type="file" id="fileSelector" accept="audio/*">
     <div id="status">ファイルを待機中...（ファイルを選択してください）</div>
@@ -37,7 +37,7 @@
             const file = e.target.files[0];
             if (!file) return;
 
-            status.innerHTML = "⏳ ファイルを読み込み中...（2時間以上のファイルは1〜2分かかります。閉じずに待ってね）";
+            status.innerHTML = "⏳ ファイルを読み込み中...（2時間以上のファイルは1〜2分かかります。サイトを閉じないでください。）";
             downloadBtn.style.display = 'none';
 
             try {
@@ -46,13 +46,13 @@
                 const audioCtx = new AudioContextClass();
                 const arrayBuffer = await file.arrayBuffer();
                 
-                status.innerHTML = "⏳ 音声データを正確に解読中（ノイズが出ないよう処理しています）...";
+                status.innerHTML = "⏳ 音声データを解読中...";
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-                status.innerHTML = "⏳ 音質を文字起こし用に最適化中（モノラル・8kHzに凝縮中）...";
+                status.innerHTML = "⏳ 音質を文字起こし用に最適化中（モノラル・6kHzに凝縮中）...";
                 
-                // 【超重要ファクト】サンプリングレートを8kHzのモノラルに落とすことで、音質を壊さずデータ量を1/10以下にするわ！
-                const targetSampleRate = 8000;
+                // 【超重要ファクト】サンプリングレートを6kHzのモノラルに落とすことで、音質を壊さずデータ量を1/10以下にするわ！
+                const targetSampleRate = 6000;
                 const offlineCtx = new OfflineAudioContext(1, audioBuffer.duration * targetSampleRate, targetSampleRate);
                 
                 const source = offlineCtx.createBufferSource();
@@ -62,7 +62,7 @@
 
                 const renderedBuffer = await offlineCtx.startRendering();
                 
-                status.innerHTML = "⏳ Gemini用の軽量ファイルを書き出し中...";
+                status.innerHTML = "軽量ファイルを書き出し中...";
                 // 安全な16bit PCMフォーマットでWAVを生成するわ。これなら絶対に砂嵐の音にはならないわ！
                 const wavBlob = bufferToWav16(renderedBuffer);
                 
@@ -70,10 +70,10 @@
                 downloadBtn.href = url;
                 downloadBtn.download = file.name.replace(/\.[^/.]+$/, "") + "_軽量化.wav";
                 
-                status.innerHTML = "✅ 軽量化が成功したわ！人の声が綺麗に残っているはずよ。";
+                status.innerHTML = "✅ 軽量化に成功！";
                 downloadBtn.style.display = 'inline-block';
             } catch (err) {
-                status.innerHTML = "❌ 変換に失敗したわ。ChromeまたはEdgeの最新版でお試しください。";
+                status.innerHTML = "❌ 変換に失敗。ChromeまたはEdgeを最新版でお試しください。";
                 console.error(err);
             }
         });
