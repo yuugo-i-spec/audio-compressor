@@ -78,9 +78,11 @@
         });
     };
 
+// 完全に100MB以下に抑え込むための「8bitモノラルWAV変換」ロジックよ！
     function bufferToWav(buffer) {
         const numOfChan = buffer.numberOfChannels;
-        const length = buffer.length * numOfChan * 2 + 44;
+        // 8bitにするから、データサイズは「サンプルの数そのもの」になるわ（16bitの半分ね）
+        const length = buffer.length * numOfChan * 1 + 44; 
         const bufferArr = new ArrayBuffer(length);
         const view = new DataView(bufferArr);
         const channels = [];
@@ -92,18 +94,19 @@
 
         function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
         function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
+        function setUint8(data) { view.setUint8(pos, data); pos += 1; }
 
         setUint32(0x46464952); // "RIFF"
         setUint32(length - 8);
         setUint32(0x45564157); // "WAVE"
         setUint32(0x20746d66); // "fmt "
         setUint32(16);
-        setUint16(1);
+        setUint16(1);          // PCMフォーマット
         setUint16(numOfChan);
         setUint32(buffer.sampleRate);
-        setUint32(buffer.sampleRate * 2 * numOfChan);
-        setUint16(numOfChan * 2);
-        setUint16(16);
+        setUint32(buffer.sampleRate * 1 * numOfChan); // バイトレート（8bitだからサンプリングレートと同じ）
+        setUint16(numOfChan * 1);                     // ブロック境界 (1バイト)
+        setUint16(8);                                 // ★ここを 8bit に指定！
         setUint32(0x61746164); // "data"
         setUint32(length - pos - 4);
 
@@ -114,9 +117,10 @@
         while (pos < length) {
             for (i = 0; i < numOfChan; i++) {
                 sample = Math.max(-1, Math.min(1, channels[i][offset]));
-                sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-                view.setInt16(pos, sample, true);
-                pos += 2;
+                // ★8bit WAVは「0〜255」の範囲（無音が128）で記録する仕様なのよ
+                let sample8 = Math.round((sample + 1) * 127.5);
+                sample8 = Math.max(0, Math.min(255, sample8));
+                setUint8(sample8);
             }
             offset++;
         }
