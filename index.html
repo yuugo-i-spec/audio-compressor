@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>音声軽量化ツール</title>
+    <title>社内専用：音声軽量化ツール</title>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f7f9; text-align: center; padding: 30px; }
         .container { max-width: 550px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
@@ -16,23 +16,25 @@
 <body>
 
 <div class="container">
-    <div class="alert-box">完全ローカル処理</div>
+    <div class="alert-box">完全ローカル処理（社外秘データ安全確認済）</div>
     <h1>音声軽量化コンバーター</h1>
     <p>音声ファイルをGeminiが読み込めるサイズにブラウザ内で安全に軽量化します。</p>
     
     <input type="file" id="fileSelector" accept="audio/*">
-    
     <div id="status">ファイルを待機中...（ファイルを選択してください）</div>
-    
     <a id="downloadBtn" href="#">軽量化されたファイルを保存する</a>
 </div>
 
 <script>
-    // 画面が完全に読み込まれてから処理を結びつける安全確実な方法よ
     window.onload = function() {
         const fileSelector = document.getElementById('fileSelector');
         const status = document.getElementById('status');
         const downloadBtn = document.getElementById('downloadBtn');
+
+        if (!fileSelector || !status || !downloadBtn) {
+            console.error("HTML要素が見つからないわ。");
+            return;
+        }
 
         fileSelector.addEventListener('change', async (e) => {
             const file = e.target.files[0];
@@ -42,8 +44,8 @@
             downloadBtn.style.display = 'none';
 
             try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                const audioCtx = new AudioContext();
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContextClass();
                 const arrayBuffer = await file.arrayBuffer();
                 
                 status.innerHTML = "⏳ 音声データをデコード中（PCのメモリを使用中）...";
@@ -77,21 +79,44 @@
     };
 
     function bufferToWav(buffer) {
-        const numOfChan = buffer.numberOfChannels, length = buffer.length * numOfChan * 2 + 44,
-            bufferArr = new ArrayBuffer(length), view = new DataView(bufferArr),
-            channels = [], i, sample, offset = 0, pos = 0;
+        const numOfChan = buffer.numberOfChannels;
+        const length = buffer.length * numOfChan * 2 + 44;
+        const bufferArr = new ArrayBuffer(length);
+        const view = new DataView(bufferArr);
+        const channels = [];
+        
+        let i = 0;
+        let sample = 0;
+        let offset = 0;
+        let pos = 0;
+
         function setUint32(data) { view.setUint32(pos, data, true); pos += 4; }
         function setUint16(data) { view.setUint16(pos, data, true); pos += 2; }
-        setUint32(0x46464952); setUint32(length - 8); setUint32(0x45564157);
-        setUint32(0x20746d66); setUint32(16); setUint16(1); setUint16(numOfChan);
-        setUint32(buffer.sampleRate); setUint32(buffer.sampleRate * 2 * numOfChan);
-        setUint16(numOfChan * 2); setUint16(16); setUint32(0x61746164); setUint32(length - pos - 4);
-        for (i = 0; i < buffer.numberOfChannels; i++) channels.push(buffer.getChannelData(i));
+
+        setUint32(0x46464952); // "RIFF"
+        setUint32(length - 8);
+        setUint32(0x45564157); // "WAVE"
+        setUint32(0x20746d66); // "fmt "
+        setUint32(16);
+        setUint16(1);
+        setUint16(numOfChan);
+        setUint32(buffer.sampleRate);
+        setUint32(buffer.sampleRate * 2 * numOfChan);
+        setUint16(numOfChan * 2);
+        setUint16(16);
+        setUint32(0x61746164); // "data"
+        setUint32(length - pos - 4);
+
+        for (i = 0; i < buffer.numberOfChannels; i++) {
+            channels.push(buffer.getChannelData(i));
+        }
+
         while (pos < length) {
             for (i = 0; i < numOfChan; i++) {
                 sample = Math.max(-1, Math.min(1, channels[i][offset]));
                 sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
-                view.setInt16(pos, sample, true); pos += 2;
+                view.setInt16(pos, sample, true);
+                pos += 2;
             }
             offset++;
         }
